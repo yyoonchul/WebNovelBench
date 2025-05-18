@@ -1,7 +1,7 @@
 # Code for WebNovelBench
 
 
-This repository contains the official Pytorch implementation for the paper "[Paper Title Here]". We provide the code for reproducing our experiments on novel generation and scoring.
+This repository contains the official Pytorch implementation for the paper "WebNovelBench: Placing LLM Novelists on the Web Novel Distribution". We provide the code for reproducing our experiments on novel generation and scoring.
 
 ## Prerequisites
 ### 1. Scoring Data Preparation
