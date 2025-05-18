@@ -1,0 +1,21 @@
+{
+    "generator": {
+        "num_threads": 5,
+        "input_name": "novel_data_subset_d_100.json",
+        "url": "https://api.myapi.cn/v1",
+        "model_name": "Qwen/Qwen2.5-72B-Instruct",
+        "note": "Qwen2-5-72B-Instruct",
+        "api_key": "sk-xxxxxxxxxxxxxxxxxxx",
+        "temperature": 0.6,
+        "max_tokens": 4096
+    },
+    "critic": {
+        "num_threads": 2,
+        "url": "https://api.myapi.cn/v1",
+        "model_name": "deepseek-ai/DeepSeek-V3",
+        "note": "DeepSeek-v3",
+        "api_key": "sk-xxxxxxxxxxxxxxxxxxx",
+        "temperature": 0.6,
+        "max_tokens": 1024
+    }
+}
