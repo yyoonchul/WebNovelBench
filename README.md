@@ -5,7 +5,7 @@ This repository contains the official Pytorch implementation for the paper "WebN
 
 ## Prerequisites
 ### 1. Scoring Data Preparation
-The full data used can be found at https://huggingface.co/datasets/Oedon42/webnovelbench
+The full data used can be found at [![Hugging Face Model: bert-base-uncased](https://img.shields.io/badge/%F0%9F%A4%97%20Model-webnovelbench-blue.svg)](https://huggingface.co/datasets/Oedon42/webnovelbench)
 
 Data structure
 ```
