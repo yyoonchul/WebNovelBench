@@ -1,4 +1,5 @@
 # Code for WebNovelBench
+<!-- NOTE: Chinese text translated to English in example snippet -->
 
 
 This repository contains the official Pytorch implementation for the paper "WebNovelBench: Placing LLM Novelists on the Web Novel Distribution". We provide the code for reproducing our experiments on novel generation and scoring.
@@ -40,7 +41,7 @@ Scoring results preview `scoring_results.json`:
       "..."
     ],
     "novel_info": [
-      "<主要人物> [张三, 李四,...] </主要人物> \n<主要情节> \n(1)...\n(2)...</主要情节> \n<重要场景> [场景1, 场景2,...] </重要场景>",
+      "<main characters> [Zhang San, Li Si,...] </main characters> \n<main plot> \n(1)...\n(2)...</main plot> \n<important scenes> [scene1, scene2,...] </important scenes>",
       "..."
     ],
     "request_id": "4e14bf73-7e0d-4e16-8450-xxxxxxxx"

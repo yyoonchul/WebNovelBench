@@ -10,6 +10,7 @@ import uvloop
 import argparse
 from volcenginesdkarkruntime import AsyncArk
 from scipy.stats import percentileofscore
+# NOTE: Translated Chinese comments and prompts to English
 
 
 def find_first_match_pattern(input_string, my_str):
@@ -22,7 +23,7 @@ def find_first_match_pattern(input_string, my_str):
 
 
 def extract_novel_info(custom_id):
-    # 使用正则表达式提取小说名和章节号
+    # Use regex to extract novel name and chapter number
     match = re.match(r'(.*?)_(\d+)$', custom_id)
     if match:
         novel_name = match.group(1)
@@ -32,7 +33,7 @@ def extract_novel_info(custom_id):
 
 
 def sort_jsonl_file(input_jsonl):
-    # 解析每一行并存储
+    # Parse each line and store it
     entries = []
     for data in input_jsonl:
         # print(data)
@@ -40,7 +41,7 @@ def sort_jsonl_file(input_jsonl):
         if novel_name and chapter_num is not None:
             entries.append((novel_name, chapter_num, data))
 
-    # 按小说名和章节号排序
+    # Sort by novel name and chapter number
     sorted_entries = sorted(entries, key=lambda x: (x[0], x[1]))
     sorted_entries_list = [entry[2] for entry in sorted_entries]
     return sorted_entries_list
@@ -55,20 +56,20 @@ def parsing_scores(scores_results):
         'dialogue_uniqueness': 0, 'character_consistency': 0,
         'atmosphere': 0, 'context': 0, 'scene_transition': 0
     }
-    # 用于存储解析后的数据
+    # Storage for parsed data
     valid_chapter = 0
     for json_data in scores_results:
         result = json_data["scores_txt"]
         try:
             scores = {
-                'rhetoric': int(find_first_match_pattern(result, '修辞手法评分')),
-                'sensory': int(find_first_match_pattern(result, '感官描述丰富度评分')),
-                'character_balance': int(find_first_match_pattern(result, '角色平衡度评分')),
-                'dialogue_uniqueness': int(find_first_match_pattern(result, '角色对白独特性评分')),
-                'character_consistency': int(find_first_match_pattern(result, '角色一致性评分')),
-                'atmosphere': int(find_first_match_pattern(result, '意境匹配度评分')),
-                'context': int(find_first_match_pattern(result, '语境适配度评分')),
-                'scene_transition': int(find_first_match_pattern(result, '跨场景衔接度评分'))
+                'rhetoric': int(find_first_match_pattern(result, 'rhetoric')),
+                'sensory': int(find_first_match_pattern(result, 'sensory')),
+                'character_balance': int(find_first_match_pattern(result, 'character_balance')),
+                'dialogue_uniqueness': int(find_first_match_pattern(result, 'dialogue_uniqueness')),
+                'character_consistency': int(find_first_match_pattern(result, 'character_consistency')),
+                'atmosphere': int(find_first_match_pattern(result, 'atmosphere')),
+                'context': int(find_first_match_pattern(result, 'context')),
+                'scene_transition': int(find_first_match_pattern(result, 'scene_transition'))
             }
             valid_chapter += 1
             for key in score_kinds:
@@ -84,12 +85,12 @@ def parsing_scores(scores_results):
 
 
 def parsing_info(sourted_scores_results):
-    # 用于存储解析后的数据
+    # Storage for parsed data
     data_list = []
     for json_data in sourted_scores_results:
         result = json_data["scores_txt"]
         try:
-            info = find_first_match_pattern(result, '提取结果')
+            info = find_first_match_pattern(result, 'extracted')
             data_list.append(info)
         except Exception as e:
             tmp = json_data.get("custom_id")
@@ -106,52 +107,28 @@ async def chapter_worker(novel_name, worker_id, chapter):
         "scores_txt": ''
     }
     if not os.path.exists(f'outputdir_famous/temp/{chapter_name}.json'):
-        prompt = f"""你的任务是根据给定的指标规则对小说进行评分(1-5)。请仔细阅读以下小说文本：<小说> {chapter} </小说> 在提取信息时，请遵循以下步骤：
-1. 仔细通读整个小说文本 
-2. 识别出主要人物，主要人物是在小说中起到关键作用、有较多情节围绕的角色 
-3. 梳理主要情节，主要情节是推动故事发展的核心事件和关键转折 
-4. 确定重要场景，重要场景是故事发生的关键地点和环境 
-5. 检查提取的信息是否准确和完整  
-请在<提取结果>标签内输出你的提取结果，格式如下：
-<主要人物及其对白>[列出主要人物的名字和对白]</主要人物及其对白> 
-<主要情节>[详细描述主要情节，按照事件发展顺序]</主要情节> 
-<重要场景>[列出重要场景的名称]</重要场景> 
-请确保提取的信息丰富、全面且准确。在评分时，请遵循以下步骤：
-1. 根据复杂修辞（隐喻/象征/悖论）的数量与质量提炼度，给出修辞手法评分 
-2. 根据文本中的视觉、听觉、嗅觉等描写数量，给出感官描述丰富度评分 
-3. 统计每个角色在生成内容中的出现频率、对话占比、心理描写和评估人物描述的平衡度，给出角色平衡度评分 
-4. 查看角色台词是否能反映本身个性，遮住名字后是否有区分度，给出角色对白独特性评分 
-5. 分析角色语言、动作是否匹配其身份和背景，给出角色一致性评分 
-6. 通过情感色谱分析，检查场景描写是否服务于整体氛围，给出意境匹配度评分 
-7. 通过分析环境细节是否适应时代/地域背景，给出语境适配度评分 
-8. 评估生成内容是否自然衔接不同场景从而避免场景割裂，给出跨场景衔接度评分。
-请在<评分结果>标签内输出你的评分结果，格式如下：
-<修辞手法评分>1</修辞手法评分> <感官描述丰富度评分>1</感官描述丰富度评分> <角色平衡度评分>1</角色平衡度评分> <角色对白独特性评分>1</角色对白独特性评分> <角色一致性评分>1</角色一致性评分> <意境匹配度评分>1</意境匹配度评分> <语境适配度评分>1</语境适配度评分> <跨场景衔接度评分>1</跨场景衔接度评分>  请确保评分全面且准确符合要求。"""
 
-        if len(prompt) > 65536:
-            clip_len = len(chapter) + 65536 - len(chapter)
-            prompt = f"""你的任务是根据给定的指标规则对小说进行评分(1-5)。请仔细阅读以下小说文本：<小说> {chapter[:clip_len]} </小说> 在提取信息时，请遵循以下步骤：
-1. 仔细通读整个小说文本 
-2. 识别出主要人物，主要人物是在小说中起到关键作用、有较多情节围绕的角色 
-3. 梳理主要情节，主要情节是推动故事发展的核心事件和关键转折 
-4. 确定重要场景，重要场景是故事发生的关键地点和环境 
-5. 检查提取的信息是否准确和完整  
-请在<提取结果>标签内输出你的提取结果，格式如下：
-<主要人物及其对白>[列出主要人物的名字和对白]</主要人物及其对白> 
-<主要情节>[详细描述主要情节，按照事件发展顺序]</主要情节> 
-<重要场景>[列出重要场景的名称]</重要场景> 
-请确保提取的信息丰富、全面且准确。在评分时，请遵循以下步骤：
-1. 根据复杂修辞（隐喻/象征/悖论）的数量与质量提炼度，给出修辞手法评分 
-2. 根据文本中的视觉、听觉、嗅觉等描写数量，给出感官描述丰富度评分 
-3. 统计每个角色在生成内容中的出现频率、对话占比、心理描写和评估人物描述的平衡度，给出角色平衡度评分 
-4. 查看角色台词是否能反映本身个性，遮住名字后是否有区分度，给出角色对白独特性评分 
-5. 分析角色语言、动作是否匹配其身份和背景，给出角色一致性评分 
-6. 通过情感色谱分析，检查场景描写是否服务于整体氛围，给出意境匹配度评分 
-7. 通过分析环境细节是否适应时代/地域背景，给出语境适配度评分 
-8. 评估生成内容是否自然衔接不同场景从而避免场景割裂，给出跨场景衔接度评分。
-请在<评分结果>标签内输出你的评分结果，格式如下：
-<修辞手法评分>1</修辞手法评分> <感官描述丰富度评分>1</感官描述丰富度评分> <角色平衡度评分>1</角色平衡度评分> <角色对白独特性评分>1</角色对白独特性评分> <角色一致性评分>1</角色一致性评分> <意境匹配度评分>1</意境匹配度评分> <语境适配度评分>1</语境适配度评分> <跨场景衔接度评分>1</跨场景衔接度评分>  请确保评分全面且准确符合要求。"""
-
+        prompt = f"""Your task is to rate the novel from 1-5 based on the given criteria. Carefully read the following text: <novel> {chapter} </novel> Follow these steps when extracting information:
+1. Read the entire text thoroughly
+2. Identify the main characters who drive the story
+3. Outline the main plot with key events
+4. Determine important scenes where events take place
+5. Verify the accuracy and completeness of the information
+Output your extraction inside the <extracted> tag in the following format:
+<main characters and lines>[list the main characters and their dialogue]</main characters and lines>
+<main plot>[describe the main plot in order]</main plot>
+<important scenes>[list the important scenes]</important scenes>
+Ensure the information is rich and accurate. When scoring, follow these steps:
+1. Score rhetorical techniques by the quantity and quality of complex devices (metaphor/symbolism/paradox)
+2. Score sensory description richness based on visual, auditory and olfactory details
+3. Score character balance by frequency, dialogue ratio and psychological portrayal
+4. Score dialogue uniqueness by checking if lines show personality and remain distinct without names
+5. Score character consistency by matching language and actions to background
+6. Score atmosphere fit by analyzing how scenes support the overall mood
+7. Score context suitability by checking environmental details for era and setting
+8. Score scene transitions for smooth flow without abrupt jumps.
+Provide your scores inside the <scores> tag in this format:
+<rhetoric>1</rhetoric> <sensory>1</sensory> <character balance>1</character balance> <dialogue uniqueness>1</dialogue uniqueness> <character consistency>1</character consistency> <atmosphere>1</atmosphere> <context>1</context> <scene transition>1</scene transition>  Ensure the scores are accurate."""
         try:
             completion = await client.batch_chat.completions.create(
                 model=os.environ.get("ARK_API_ID"),
@@ -188,9 +165,9 @@ async def novel_worker(file_path: str) -> None:
         with open(file_path, 'r', encoding='utf-8') as f:
             chapters = json.load(f)
         if not os.path.exists(f'outputdir_famous/{temp_output_filename}'):
-            # 创建任务列表
+            # Create task list
             tasks = [chapter_worker(novel_name, i, chapters[i]) for i in range(len(chapters))]
-            # 等待所有任务完成
+            # Wait for all tasks to complete
             scores_results_unparsed = await asyncio.gather(*tasks)
             sorted_result = sort_jsonl_file(scores_results_unparsed)
             scores_results = parsing_scores(sorted_result)
@@ -247,7 +224,7 @@ if __name__ == "__main__":
     parser.add_argument("--dir", type=str, default="famous_novels_chapter10_jsons", help="Path to the novel files")
     arg = parser.parse_args()
     
-    # 指定包含 JSON 文件的目录路径
+    # Path to the directory containing JSON files
     json_directory = arg.dir
 
     with open ("fixed_parameters.json", "r") as f:
