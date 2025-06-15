@@ -18,35 +18,36 @@ from datetime import datetime
 import uvloop
 from volcenginesdkarkruntime import AsyncArk
 
+# NOTE: Translated Chinese comments and prompts to English
 
 SYSTEM_PROMPT1 = """
-你是一个中文小说作家，你需要根据用户提供的信息进行扩写创作，创作需要满足下列条件：
-1. 用户会用下面的格式给出长篇小说的主要人物、主要情节和主要场景，请仔细阅读用户提供的信息：
-    <主要人物>[主要人物的名字]</主要人物> 
-    <主要情节>[主要情节，按照事件发展顺序]</主要情节> 
-    <重要场景>[重要场景的名称]</重要场景> 
-2. 评论家会根据下列标准打分：
-    根据复杂修辞（隐喻/象征/悖论）的数量与质量提炼度，对修辞手法评分 
-    根据文本中的视觉、听觉、嗅觉等描写数量，对感官描述丰富度评分 
-    统计每个角色在生成内容中的出现频率、对话占比、心理描写和评估人物描述的平衡度，对角色平衡度评分 
-    查看角色台词是否能反映本身个性，遮住名字后是否有区分度，对角色对白独特性评分 
-    分析角色语言、动作是否匹配其身份和背景，对角色一致性评分 
-    通过情感色谱分析，检查场景描写是否服务于整体氛围，对意境匹配度评分 
-    通过分析环境细节是否适应时代/地域背景，对语境适配度评分 
-    评估生成内容是否自然衔接不同场景从而避免场景割裂，对跨场景衔接度评分
-3. 只需按照指定格式返回生成的小说：
-    <text>你生成的小说内容</text>
+You are a Chinese novel writer. Expand the story according to the user's information under these conditions:
+1. The user provides the main characters, main plot and important scenes in this format:
+    <main characters>[names of the main characters]</main characters>
+    <main plot>[main plot in order]</main plot>
+    <important scenes>[names of important scenes]</important scenes>
+2. The critic scores using these standards:
+    Score rhetorical techniques by the number and quality of complex devices (metaphor/symbolism/paradox)
+    Score sensory richness by counting visual, auditory and olfactory descriptions
+    Score character balance by each character's frequency, dialogue ratio and psychological portrayal
+    Score dialogue uniqueness by checking if lines show personality and remain distinct without names
+    Analyze whether characters' language and actions match their background for consistency
+    Check atmosphere fit through emotional analysis of scenes
+    Evaluate context suitability with environment details
+    Assess scene transitions to avoid abrupt cuts
+3. Return only the generated novel in this format:
+    <text>Your generated novel content</text>
 """
 
 SYSTEM_PROMPT2 = """
-你是一个中文小说作家，你需要根据用户提供的信息进行扩写创作，创作需要满足下列条件：
-1. 用户会用下面的格式给出长篇小说的主要人物、主要情节和主要场景，请仔细阅读用户提供的信息：
-    <主要人物>[主要人物的名字]</主要人物> 
-    <主要情节>[主要情节，按照事件发展顺序]</主要情节> 
-    <重要场景>[重要场景的名称]</重要场景> 
-2. 人物间可能存在对话，必要时请编写恰当的人物对话
-3. 只需按照指定格式返回生成的小说：
-    <text>你生成的小说内容</text>
+You are a Chinese novel writer. Expand the story using the user's information with these rules:
+1. The user provides the main characters, main plot and important scenes in the same format as above:
+    <main characters>[names of the main characters]</main characters>
+    <main plot>[main plot in order]</main plot>
+    <important scenes>[names of important scenes]</important scenes>
+2. Dialogues may appear between characters; write appropriate lines when needed.
+3. Return only the generated novel in this format:
+    <text>Your generated novel content</text>
 """
 
 def load_config(config_path='config.json'):
@@ -179,7 +180,7 @@ def generate_novel(config, suffix, time_padding=None):
     return output_name
 
 def extract_novel_info(custom_id):
-    # 使用正则表达式提取小说名和章节号
+    # Use regex to extract novel name and chapter number
     match = re.match(r'(.*?)_(\d+)$', custom_id)
     if match:
         novel_name = match.group(1)
@@ -188,14 +189,14 @@ def extract_novel_info(custom_id):
     return None, None
 
 def sort_jsonl_file(input_jsonl):
-    # 解析每一行并存储
+    # Parse each line and store it
     entries = []
     for data in input_jsonl:
         novel_name, chapter_num = extract_novel_info(data['custom_id'])
         if novel_name and chapter_num is not None:
             entries.append((novel_name, chapter_num, data))
     
-    # 按小说名和章节号排序
+    # Sort by novel name and chapter number
     sorted_entries = sorted(entries, key=lambda x: (x[0], x[1]))
     sorted_entries_list = [entry[2] for entry in sorted_entries]
     return sorted_entries_list
@@ -223,27 +224,27 @@ def transform_novel_data(input_file):
                     "messages": [
                         {
                             "role": "user",
-"content": f"""你的任务是根据给定的指标规则对小说进行评分(1-5)。请仔细阅读以下小说文本：<小说> {predictions[i]} </小说> 在提取信息时，请遵循以下步骤：
-1. 仔细通读整个小说文本 
-2. 识别出主要人物，主要人物是在小说中起到关键作用、有较多情节围绕的角色 
-3. 梳理主要情节，主要情节是推动故事发展的核心事件和关键转折 
-4. 确定重要场景，重要场景是故事发生的关键地点和环境 
-5. 检查提取的信息是否准确和完整  
-请在<提取结果>标签内输出你的提取结果，格式如下：
-<主要人物及其对白>[列出主要人物的名字和对白]</主要人物及其对白> 
-<主要情节>[详细描述主要情节，按照事件发展顺序]</主要情节> 
-<重要场景>[列出重要场景的名称]</重要场景> 
-请确保提取的信息丰富、全面且准确。在评分时，请遵循以下步骤：
-1. 根据复杂修辞（隐喻/象征/悖论）的数量与质量提炼度，给出修辞手法评分 
-2. 根据文本中的视觉、听觉、嗅觉等描写数量，给出感官描述丰富度评分 
-3. 统计每个角色在生成内容中的出现频率、对话占比、心理描写和评估人物描述的平衡度，给出角色平衡度评分 
-4. 查看角色台词是否能反映本身个性，遮住名字后是否有区分度，给出角色对白独特性评分 
-5. 分析角色语言、动作是否匹配其身份和背景，给出角色一致性评分 
-6. 通过情感色谱分析，检查场景描写是否服务于整体氛围，给出意境匹配度评分 
-7. 通过分析环境细节是否适应时代/地域背景，给出语境适配度评分 
-8. 评估生成内容是否自然衔接不同场景从而避免场景割裂，给出跨场景衔接度评分。
-请在<评分结果>标签内输出你的评分结果，格式如下：
-<修辞手法评分>1</修辞手法评分> <感官描述丰富度评分>1</感官描述丰富度评分> <角色平衡度评分>1</角色平衡度评分> <角色对白独特性评分>1</角色对白独特性评分> <角色一致性评分>1</角色一致性评分> <意境匹配度评分>1</意境匹配度评分> <语境适配度评分>1</语境适配度评分> <跨场景衔接度评分>1</跨场景衔接度评分>  请确保评分全面且准确符合要求。"""
+"content": f"""Your task is to rate the novel from 1-5 based on the given criteria. Carefully read the following text: <novel> {predictions[i]} </novel> Follow these steps when extracting information:
+1. Read the entire text thoroughly
+2. Identify the main characters who drive the story
+3. Outline the main plot with key events
+4. Determine important scenes where events take place
+5. Check the accuracy and completeness of the information
+Provide your extraction inside the <extracted> tag in the following format:
+<main characters and lines>[list the main characters and their dialogue]</main characters and lines>
+<main plot>[describe the main plot in order]</main plot>
+<important scenes>[list the important scenes]</important scenes>
+Ensure the information is rich and accurate. When scoring, follow these steps:
+1. Score rhetorical techniques by the quantity and quality of complex devices (metaphor/symbolism/paradox)
+2. Score sensory description richness based on visual, auditory and olfactory details
+3. Score character balance by frequency, dialogue ratio and psychological portrayal
+4. Score dialogue uniqueness by checking if lines show personality and remain distinct without names
+5. Score character consistency by matching language and actions to background
+6. Score atmosphere fit by analyzing how scenes support the overall mood
+7. Score context suitability by checking environmental details for era and setting
+8. Score scene transitions for smooth flow without abrupt jumps.
+Provide your scores inside the <scores> tag in this format:
+<rhetoric>1</rhetoric> <sensory>1</sensory> <character balance>1</character balance> <dialogue uniqueness>1</dialogue uniqueness> <character consistency>1</character consistency> <atmosphere>1</atmosphere> <context>1</context> <scene transition>1</scene transition>  Ensure the scores are accurate."""
                         }
                     ],
                     "max_tokens": 1024,
@@ -302,10 +303,10 @@ async def critic(request_list, max_concurrent_tasks = 10):
     task_num = int(np.ceil(len(request_list) / max_concurrent_tasks))
     sub_taskes = [request_list[i:i + max_concurrent_tasks] for i in range(0, len(request_list), max_concurrent_tasks)]
 
-    # 创建任务列表
+    # Create task list
     tasks = [worker(i, sub_taskes[i]) for i in range(task_num)]
 
-    # 等待所有任务完成
+    # Wait for all tasks to complete
     results = await asyncio.gather(*tasks)
     scores_results = list(itertools.chain(*results))
     sorted_scores_results = sort_jsonl_file(scores_results)
@@ -352,7 +353,7 @@ def parsing_scores(scores_results, merged_score):
                 },
                 "valid_chapter": 0} for item in merged_score}
 
-    # 用于存储解析后的数据
+    # Storage for parsed data
     data_list = []
     for json_data in scores_results:
 
@@ -360,14 +361,14 @@ def parsing_scores(scores_results, merged_score):
         result = json_data["scores_txt"]
         try:
             scores = {
-                        'rhetoric': int(find_first_match_pattern(result, '修辞手法评分')),
-                        'sensory': int(find_first_match_pattern(result, '感官描述丰富度评分')),
-                        'character_balance': int(find_first_match_pattern(result, '角色平衡度评分')),
-                        'dialogue_uniqueness': int(find_first_match_pattern(result, '角色对白独特性评分')),
-                        'character_consistency': int(find_first_match_pattern(result, '角色一致性评分')),
-                        'atmosphere': int(find_first_match_pattern(result, '意境匹配度评分')),
-                        'context': int(find_first_match_pattern(result, '语境适配度评分')),
-                        'scene_transition': int(find_first_match_pattern(result, '跨场景衔接度评分'))
+                        'rhetoric': int(find_first_match_pattern(result, 'rhetoric')),
+                        'sensory': int(find_first_match_pattern(result, 'sensory')),
+                        'character_balance': int(find_first_match_pattern(result, 'character_balance')),
+                        'dialogue_uniqueness': int(find_first_match_pattern(result, 'dialogue_uniqueness')),
+                        'character_consistency': int(find_first_match_pattern(result, 'character_consistency')),
+                        'atmosphere': int(find_first_match_pattern(result, 'atmosphere')),
+                        'context': int(find_first_match_pattern(result, 'context')),
+                        'scene_transition': int(find_first_match_pattern(result, 'scene_transition'))
                     }
             tmp_dict[novel_index]['valid_chapter'] += 1
             for key in score_kinds:
